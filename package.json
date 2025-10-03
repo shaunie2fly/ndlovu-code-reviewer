@@ -6,15 +6,20 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "inspector": "node scripts/simple-inspector-manager.js",
+    "inspector:log": "node scripts/simple-inspector-manager.js --enable-logging",
+    "inspector:cleanup": "node scripts/simple-inspector-manager.js --cleanup",
+    "inspector:auto": "node scripts/simple-inspector-manager.js --auto-cleanup"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.2",
+    "@modelcontextprotocol/sdk": "^1.19.1",
+    "winston": "^3.18.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {

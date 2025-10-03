@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
+import { createLogger, logInfo, logError, logWarning } from './logger.js';
+import { parseArgs, showHelp } from './cli.js';
 
 // Promisify exec for async/await usage
 const execAsync = promisify(exec);
@@ -22,11 +24,14 @@ function isArgumentTooLongError(error: unknown): boolean {
 }
 
 async function spawnGemini(args: string[], input: string | null, timeoutMs: number): Promise<GeminiResult> {
+  logInfo('Spawning Gemini CLI process', { args: args.join(' '), timeoutMs });
+
   return new Promise((resolve, reject) => {
     let child;
     try {
       child = spawn("gemini", args, { stdio: ["pipe", "pipe", "pipe"] });
     } catch (spawnError) {
+      logError('Failed to spawn Gemini CLI process', spawnError);
       reject(spawnError);
       return;
     }
@@ -41,7 +46,9 @@ async function spawnGemini(args: string[], input: string | null, timeoutMs: numb
       }
       settled = true;
       child.kill("SIGTERM");
-      reject(new Error(`Gemini CLI timed out after ${timeoutMs} ms`));
+      const timeoutError = new Error(`Gemini CLI timed out after ${timeoutMs} ms`);
+      logError('Gemini CLI process timed out', { timeoutMs });
+      reject(timeoutError);
     }, timeoutMs);
 
     child.stdout.setEncoding("utf8");
@@ -72,14 +79,18 @@ async function spawnGemini(args: string[], input: string | null, timeoutMs: numb
       clearTimeout(timer);
 
       if (code !== 0) {
-        reject(new Error(`Gemini CLI exited with code ${code}${stderr ? `: ${stderr}` : ""}`));
+        const error = new Error(`Gemini CLI exited with code ${code}${stderr ? `: ${stderr}` : ""}`);
+        logError('Gemini CLI process exited with non-zero code', { code, stderr });
+        reject(error);
         return;
       }
 
       if (stderr.trim()) {
         console.warn(`Gemini CLI output on stderr: ${stderr}`);
+        logWarning('Gemini CLI output on stderr', { stderr });
       }
 
+      logInfo('Gemini CLI process completed successfully', { exitCode: code });
       resolve({ stdout, stderr });
     });
 
@@ -95,14 +106,18 @@ async function spawnGemini(args: string[], input: string | null, timeoutMs: numb
 
 // Safely invoke the Gemini CLI, falling back to stdin if necessary
 async function runGeminiPrompt(prompt: string, timeoutMs = 120_000): Promise<GeminiResult> {
+  logInfo('Running Gemini CLI prompt', { promptLength: prompt.length, timeoutMs });
+
   try {
     return await spawnGemini([prompt], null, timeoutMs);
   } catch (error) {
     if (isArgumentTooLongError(error)) {
+      logWarning('Gemini prompt exceeded argument length; falling back to stdin streaming');
       console.warn("Gemini prompt exceeded argument length; streaming via stdin instead.");
       return spawnGemini([], prompt, timeoutMs);
     }
 
+    logError('Gemini CLI prompt failed', error);
     throw error;
   }
 }
@@ -296,6 +311,8 @@ function parseTypeScriptErrors(output: string): any[] {
 
 // Helper function to run the hybrid analysis directly in Node.js
 async function runHybridAnalysis(): Promise<string> {
+  logInfo('Starting hybrid analysis');
+
   try {
     // 1. Find all modified and added JS/TS/Vue files, excluding deleted files
     const { stdout: gitFiles } = await execAsync("git diff HEAD --name-only --diff-filter=AM");
@@ -304,16 +321,22 @@ async function runHybridAnalysis(): Promise<string> {
       .filter(file => file.trim() !== '')
       .filter(file => /\.(js|ts|tsx|vue)$/.test(file));
 
+    logInfo('Found changed files', { totalFiles: changedFiles.length, files: changedFiles });
+
     // 2. If no relevant files have changed, return empty JSON object
     if (changedFiles.length === 0) {
+      logInfo('No relevant files changed, returning empty result');
       return '{}';
     }
 
     // 3. Run the project's preferred linter
+    logInfo('Running linter analysis');
     const linterReport = await runProjectLinter(changedFiles);
+    logInfo('Linter analysis completed', { issuesFound: linterReport.length });
 
     // 4. Get the raw git diff
     const { stdout: gitDiff } = await execAsync("git diff HEAD");
+    logInfo('Git diff retrieved', { diffLength: gitDiff.length });
 
     // 5. Combine the git diff and linter report into JSON
     const result = {
@@ -321,9 +344,10 @@ async function runHybridAnalysis(): Promise<string> {
       linterReport: linterReport
     };
 
+    logInfo('Hybrid analysis completed successfully');
     return JSON.stringify(result, null, 2);
   } catch (error) {
-    console.error('Error in hybrid analysis:', error);
+    logError('Error in hybrid analysis', error);
     throw error;
   }
 }
@@ -340,12 +364,15 @@ server.tool(
   "Analyze and review uncommitted code changes using AI and static analysis. Performs comprehensive code review including linting, style checks, logic analysis, and security review. Use this when user asks to review, analyze, check, or examine code changes, diffs, or local modifications.",
   {}, // No input parameters are needed
   async () => {
+    logInfo('Code review tool invoked');
+
     try {
       // 1. Run the hybrid analysis directly in Node.js
       const analysisData = await runHybridAnalysis();
 
       // 2. Short-circuit if no relevant files have changed
       if (analysisData === '{}') {
+        logInfo('No relevant files changed, returning empty result');
         return {
           content: [
             {
@@ -411,9 +438,11 @@ Follow these steps meticulously to construct the final JSON object:
 }`;
 
       // 3. Execute Gemini CLI with the prepared prompt without shell quoting
+      logInfo('Executing Gemini CLI for code review analysis');
       const { stdout } = await runGeminiPrompt(prompt);
 
       // 4. Return the successful JSON output from stdout
+      logInfo('Code review analysis completed successfully');
       return {
         content: [
           {
@@ -423,21 +452,38 @@ Follow these steps meticulously to construct the final JSON object:
         ],
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Execution failed: ${errorMessage}`);
-      throw new Error(`An unexpected error occurred: ${errorMessage}`);
+      logError('Code review tool execution failed', error);
+      console.error(`Execution failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
   }
 );
 
 // Start the Server
 async function startServer() {
+  // Parse command line arguments
+  const args = parseArgs();
+
+  // Show help if requested
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    showHelp();
+    process.exit(0);
+  }
+
+  // Initialize logger
+  createLogger(args.enableLogging);
+
+  if (args.enableLogging) {
+    logInfo('Starting Ndlovu Code Reviewer server', { enableLogging: args.enableLogging });
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Gemini Code Reviewer is running.");
+  console.error("Ndlovu Code Reviewer is running.");
 }
 
 startServer().catch((error) => {
   console.error("Failed to start server:", error);
+  logError('Failed to start server', error instanceof Error ? error.stack : error);
   process.exit(1);
 });

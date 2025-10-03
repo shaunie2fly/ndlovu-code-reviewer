@@ -9,7 +9,7 @@
      "ndlovu-code-reviewer": {
       "command": "node",
       "args": [
-        "/mnt/nvme1-data/home/shaunbotsis/development/ndlovu-code-reviewer/dist/index.js"
+        "/mnt/nvme1-data/home/shaunbotsis/development/ndlovu-code-reviewer/dist/index.js","--enable-logging"
       ],
       "cwd": "/mnt/nvme1-data/home/shaunbotsis/development/ndlovu-code-reviewer/"
     }
