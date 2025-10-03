@@ -112,3 +112,4 @@ Thumbs.db
 
 # MCP Inspector artifacts
 .mcp-inspector/
+.claude
