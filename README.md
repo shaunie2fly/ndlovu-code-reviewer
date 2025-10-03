@@ -4,7 +4,9 @@
 
 # Code Review MCP Server
 
-A Gemini-powered code review assistant that runs as a Model Context Protocol (MCP) server.
+A Gemini-CLI (for now), powered code review assistant that runs as a Model Context Protocol (MCP) server.
+
+
 
 ## Why this project exists
 
@@ -49,6 +51,54 @@ npm start
 ```
 
 The server communicates over stdio, so it is ready to be registered with any MCP-compatible client (e.g. IDE integrations or assistant sandboxes). Once connected, call the `review-local-changes` tool to trigger the hybrid analysis and receive the JSON review.
+
+### How to call the MCP tool
+
+The server exposes a single tool called `review-local-changes` that performs comprehensive analysis of your local, uncommitted code changes.
+
+**Prerequisites:**
+- You must have uncommitted changes in your git repository
+- Changed files should be JavaScript, TypeScript, or Vue files (`.js`, `.ts`, `.tsx`, `.vue`)
+- The Gemini CLI must be installed and authenticated
+
+**Using the tool:**
+
+Once your MCP client is connected to the server, you can call the `review-local-changes` tool. The tool:
+
+1. **Automatically detects changes** - Finds all modified/added JS/TS/Vue files using `git diff`
+2. **Runs static analysis** - Executes the best available linter (ESLint, JSHint, or TypeScript compiler)
+3. **Performs AI review** - Sends the combined context to Gemini CLI for intelligent analysis
+4. **Returns structured results** - Provides a JSON response with findings and recommendations
+
+**How to use it with Claude Code:**
+
+You don't need to remember the exact tool name or type special commands. Simply ask Claude naturally:
+
+- "Please review my local changes"
+- "Can you analyze the code changes I've made?"
+- "Use the review-local-changes tool to analyze my current changes"
+
+Claude will automatically detect and use the appropriate tool based on your request. The tool integration is seamless - just ask for a code review in natural language and Claude will handle the rest.
+
+**Example output format:**
+```json
+{
+  "summary": "Overview of changes made",
+  "assessment": "Overall code quality evaluation",
+  "findings": [
+    {
+      "filePath": "src/example.js",
+      "lineNumber": 42,
+      "severity": "warning",
+      "category": "style",
+      "comment": "Detailed explanation of the issue",
+      "suggestion": "Specific recommendation for improvement"
+    }
+  ]
+}
+```
+
+**Note:** If no relevant files have been changed, the tool will return a "No relevant files changed" message, which is normal behavior.
 
 ### Local development
 
