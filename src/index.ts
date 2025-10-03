@@ -330,7 +330,7 @@ async function runHybridAnalysis(): Promise<string> {
 
 // Instantiate the MCP Server
 const server = new McpServer({
-  name: "Gemini Code Reviewer",
+  name: "Ndlovu Code Reviewer",
   version: "1.0.0",
 });
 

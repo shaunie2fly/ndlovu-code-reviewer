@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+     "ndlovu-code-reviewer": {
+      "command": "node",
+      "args": [
+        "/mnt/nvme1-data/home/shaunbotsis/development/ndlovu-code-reviewer/dist/index.js"
+      ],
+      "cwd": "/mnt/nvme1-data/home/shaunbotsis/development/ndlovu-code-reviewer/"
+    }
+  }
+}
