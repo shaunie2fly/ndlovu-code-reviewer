@@ -72,13 +72,23 @@ Once your MCP client is connected to the server, you can call the `review-local-
 
 **How to use it with Claude Code:**
 
-You don't need to remember the exact tool name or type special commands. Simply ask Claude naturally:
+For best results, be explicit about using the code review functionality. While natural language requests sometimes work, the most reliable approach is to use specific keywords:
 
+**Most reliable requests (recommended):**
+- "Use the code review tool to analyze my changes"
+- "Run code review on my local changes"
+- "Perform a comprehensive code review of my uncommitted changes"
+- "Analyze my code changes with static analysis"
+
+**Natural language requests (may work but less reliable):**
 - "Please review my local changes"
 - "Can you analyze the code changes I've made?"
-- "Use the review-local-changes tool to analyze my current changes"
 
-Claude will automatically detect and use the appropriate tool based on your request. The tool integration is seamless - just ask for a code review in natural language and Claude will handle the rest.
+**Explicit tool invocation (most reliable):**
+- "Use the review-local-changes tool"
+- "Call the review-local-changes tool to check my modifications"
+
+The tool has been enhanced with better descriptions to help Claude recognize when to use it, but being specific about "code review," "analyze changes," or mentioning the tool name directly will give you the most consistent results.
 
 **Example output format:**
 ```json

@@ -337,7 +337,7 @@ const server = new McpServer({
 // Define the Reviewer "Tool"
 server.tool(
   "review-local-changes", // The unique name of our tool
-  "Performs a hybrid AI + static analysis review of local, uncommitted code changes.",
+  "Analyze and review uncommitted code changes using AI and static analysis. Performs comprehensive code review including linting, style checks, logic analysis, and security review. Use this when user asks to review, analyze, check, or examine code changes, diffs, or local modifications.",
   {}, // No input parameters are needed
   async () => {
     try {
