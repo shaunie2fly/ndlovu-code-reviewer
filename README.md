@@ -29,7 +29,7 @@ Manual code reviews are time-consuming and often miss the opportunity to combine
 - Node.js 18 or later (ES modules and AbortSignals are used throughout).
 - npm (installed with Node.js).
 - Git (used to collect local diffs).
-- Google Gemini CLI (`gemini`) installed and authenticated. See [the Gemini quickstart](https://ai.google.dev/docs/tools/gemini_cli) for setup instructions.
+- Google Gemini CLI (`gemini`) installed and authenticated. See [the Gemini quickstart](https://github.com/google-gemini/gemini-cli) for setup instructions.
 
 ## Installation
 
